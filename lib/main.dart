@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/splash_screen.dart';
-import 'providers/auth_provider.dart';
+import 'presentation/views/splash_screen.dart';
+import 'presentation/viewmodels/auth_provider.dart';
 
 // Main function - Entry point of the app
+// Update your main.dart
 void main() async {
-  // Ensure Flutter widgets are initialized
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase (make sure you have added Firebase config files)
   await Firebase.initializeApp();
-
-  // Run the app
   runApp(const MyApp());
 }
 

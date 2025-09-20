@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import 'package:planto_ecommerce_app/presentation/viewmodels/auth_provider.dart';
 import 'login_screen.dart';
 
 // Admin Panel - Screen for admin users
@@ -9,6 +9,7 @@ class AdminPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('admin Screen build');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Panel'),

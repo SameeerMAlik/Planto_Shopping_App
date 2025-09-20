@@ -41,6 +41,14 @@ dependencies:
   provider: ^6.1.5+1
   fluttertoast:
 
+
+    # Utilities
+
+  flutter_screenutil: ^5.9.0  # Responsive design
+  cached_network_image: ^3.3.0  # Image caching
+
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -51,6 +59,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  # Code generation
+  build_runner: ^2.4.7
+  json_annotation: ^4.8.1
+  json_serializable: ^6.7.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

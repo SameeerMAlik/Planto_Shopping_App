@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../widgets/custom_button.dart';
+import '../viewmodels/auth_provider.dart';
+import '../widgets/common/custom_button.dart';
 import 'signup_screen.dart';
 import 'admin_panel.dart';
 import 'customer_panel.dart';
@@ -62,12 +62,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('login Screen build');
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Consumer<AuthProvider>(
-          builder: (context, authProvider, child) {
-            return SingleChildScrollView(
+
+            child:  SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
@@ -141,31 +142,41 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 30),
 
                     // Login button
-                    CustomButton(
-                      text: 'Login',
-                      onPressed: authProvider.isLoading ? null : _handleLogin,
-                      isLoading: authProvider.isLoading,
+                    Consumer<AuthProvider>(
+                      builder: (context,authProvider,child){
+                      return CustomButton(
+                        text: 'Login',
+                        onPressed: authProvider.isLoading ? null : _handleLogin,
+                        isLoading: authProvider.isLoading,
+                      );}
                     ),
                     const SizedBox(height: 20),
 
-                    // Show error message if any
-                    if (authProvider.errorMessage != null)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red[300]!),
-                        ),
-                        child: Text(
-                          authProvider.errorMessage!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                    // Error message - ONLY this part listens to AuthProvider
+                    Consumer<AuthProvider>(
+                      builder: (context, authProvider, child) {
+                        if (authProvider.errorMessage != null) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red[300]!),
+                            ),
+                            child: Text(
+                              authProvider.errorMessage!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink(); // Return empty widget if no error
+                      },
+                    ),
+
 
                     const SizedBox(height: 30),
 
@@ -195,9 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-            );
-          },
-        ),
+            ),
       ),
     );
   }

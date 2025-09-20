@@ -29,9 +29,37 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _user != null;
 
+  // Add this method to your AuthProvider class
+  Future<void> initializeAuth() async {
+    try {
+      // Check current authentication state
+      _user = _firebaseAuth.currentUser;
+
+      if (_user != null) {
+        print('User found: ${_user!.uid}');
+        // User is logged in, fetch their role
+        await _fetchUserRole();
+        print('User role: $_userRole');
+      } else {
+        print('No user logged in');
+      }
+
+      notifyListeners();
+    } catch (e) {
+      print('Error initializing auth: $e');
+      _setError('Failed to initialize authentication');
+    }
+  }
+
   // Constructor - Check if user is already logged in when app starts
+  // AuthProvider() {
+  //   _checkCurrentUser();
+  // }
+  // Update the AuthProvider constructor
   AuthProvider() {
-    _checkCurrentUser();
+    // Don't call _checkCurrentUser() immediately
+    // Instead, call initializeAuth() from splash screen
+    initializeAuth();
   }
 
   // Check if user is already logged in

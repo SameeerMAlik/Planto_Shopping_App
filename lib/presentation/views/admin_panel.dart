@@ -1,112 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:planto_ecommerce_app/presentation/viewmodels/auth_provider.dart';
-import 'login_screen.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/services/auth_handler.dart';
+import '../../../core/services/panel_handler.dart';
+import '../viewmodels/auth_provider.dart';
+import '../widgets/common/panel_header.dart';
+import '../widgets/common/user_info_card.dart';
 
-// Admin Panel - Screen for admin users
 class AdminPanel extends StatelessWidget {
   const AdminPanel({super.key});
 
   @override
   Widget build(BuildContext context) {
-    print('admin Screen build');
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Admin Panel'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        title: const Text(AppStrings.adminPanel),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
         actions: [
-          // Logout button
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => _handleLogout(context),
+            onPressed: () => AuthHandler.handleLogout(context),
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          return Center(
+      body: Consumer<AuthViewModel>(
+        builder: (context, authViewModel, child) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Admin icon
-                const Icon(
-                  Icons.admin_panel_settings,
-                  size: 100,
-                  color: Colors.green,
+                // User info card (reusable)
+                // In admin_panel.dart, update this line:
+                UserInfoCard(
+                  user: authViewModel.user,
+                  userRole: authViewModel.userRole,
                 ),
-                const SizedBox(height: 20),
 
-                // Welcome message
-                const Text(
-                  'Admin Panel',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // User info
-                if (authProvider.user != null)
-                  Text(
-                    'Welcome, ${authProvider.user!.email}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
-                  ),
                 const SizedBox(height: 30),
 
-                // Info text
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    'This is where admin users will manage products, orders, and customers. More features will be added in upcoming days.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                      height: 1.5,
-                    ),
-                  ),
+                // Welcome header (reusable)
+                const PanelHeader(
+                  icon: Icons.admin_panel_settings,
+                  title: AppStrings.adminPanel,
+                  subtitle: 'Manage your store and products',
                 ),
+
                 const SizedBox(height: 40),
 
-                // Placeholder buttons for future features
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navigate to products management
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Products management coming soon!')),
-                    );
-                  },
-                  icon: const Icon(Icons.inventory),
-                  label: const Text('Manage Products'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                ),
-                const SizedBox(height: 10),
+                // Admin feature buttons (reusable)
+                ...PanelHandler.getAdminFeatures(context),
 
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Navigate to orders management
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Orders management coming soon!')),
-                    );
-                  },
-                  icon: const Icon(Icons.shopping_cart),
-                  label: const Text('Manage Orders'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                ),
+                const SizedBox(height: 30),
+
+                // Quick stats section (reusable widget)
+                _buildQuickStats(),
               ],
             ),
           );
@@ -115,15 +66,66 @@ class AdminPanel extends StatelessWidget {
     );
   }
 
-  // Handle logout
-  Future<void> _handleLogout(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.signOut();
+  Widget _buildQuickStats() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Stats',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 15),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Products', '0', Icons.inventory),
+              _buildStatItem('Orders', '0', Icons.shopping_cart),
+              _buildStatItem('Revenue', '\$0', Icons.attach_money),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (context.mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 30),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
   }
 }

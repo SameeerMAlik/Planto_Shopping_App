@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 // AuthProvider class manages all authentication logic
-class AuthProvider with ChangeNotifier {
+class AuthViewModel with ChangeNotifier {
   // Firebase Auth instance
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
@@ -56,7 +56,7 @@ class AuthProvider with ChangeNotifier {
   //   _checkCurrentUser();
   // }
   // Update the AuthProvider constructor
-  AuthProvider() {
+  AuthViewModel() {
     // Don't call _checkCurrentUser() immediately
     // Instead, call initializeAuth() from splash screen
     initializeAuth();

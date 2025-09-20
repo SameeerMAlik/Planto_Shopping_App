@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       // Wrap the app with Provider for state management
       providers: [
         // AuthProvider will manage authentication state throughout the app
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
       ],
       child: MaterialApp(
         title: 'Planto - Fruit & Vegetable App',

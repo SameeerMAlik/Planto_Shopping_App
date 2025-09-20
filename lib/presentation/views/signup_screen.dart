@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../viewmodels/auth_provider.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/services/auth_handler.dart';
+import '../../../core/services/navigation_handler.dart';
+import '../../../core/services/form_handler.dart';
+import '../../../core/utils/validators.dart';
 import '../widgets/common/custom_button.dart';
-import 'admin_panel.dart';
-import 'customer_panel.dart';
+import '../widgets/specific/auth_header.dart';
+import '../widgets/specific/role_dropdown.dart';
 
-// Sign Up Screen - Where new users create account
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -14,64 +17,60 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  // Controllers for input fields
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-
-  // Form key for validation
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // Selected role (default to customer)
+  // Form controllers
+  late final Map<String, TextEditingController> _controllers;
   String _selectedRole = 'customer';
 
   @override
+  void initState() {
+    super.initState();
+    _controllers = {
+      'email': TextEditingController(),
+      'password': TextEditingController(),
+      'confirmPassword': TextEditingController(),
+    };
+  }
+
+  @override
   void dispose() {
-    // Clean up controllers
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    FormHandler.disposeControllers(_controllers);
     super.dispose();
   }
 
-  // Handle sign up button press
-  Future<void> _handleSignUp() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  // Clean signup handling - no repetitive code!
+  Future<void> _handleSignup() async {
+    final formData = FormHandler.validateAndGetFormData(
+      formKey: _formKey,
+      controllers: _controllers,
+      context: context,
+    );
 
-      // Clear any previous errors
-      authProvider.clearError();
-
-      // Attempt to sign up
-      bool success = await authProvider.signUp(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-        _selectedRole,
-      );
-
-      if (success && mounted) {
-        // Navigate based on selected role
-        if (_selectedRole == 'admin') {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const AdminPanel()),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const CustomerPanel()),
-          );
-        }
+    if (formData != null) {
+      // Additional password confirmation validation
+      if (formData['password'] != formData['confirmPassword']) {
+        return; // Validation already handled by form validator
       }
+
+      await AuthHandler.handleSignup(
+        context: context,
+        formKey: _formKey,
+        email: formData['email']!,
+        password: formData['password']!,
+        role: _selectedRole,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Create Account'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        title: const Text(AppStrings.createAccount),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -83,178 +82,77 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 const SizedBox(height: 20),
 
-                // Welcome text (Static - no rebuilds needed)
-                const Text(
-                  'Join Planto!',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                  textAlign: TextAlign.center,
+                // Reusable header
+                const AuthHeader(
+                  title: AppStrings.joinPlanto,
+                  subtitle: AppStrings.createAccountSubtitle,
                 ),
-                const SizedBox(height: 10),
 
-                const Text(
-                  'Create your account to get started',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 40),
 
-                // Email input (Static - no rebuilds needed)
-                TextFormField(
-                  controller: _emailController,
+                // Email field
+                FormHandler.createTextField(
+                  controller: _controllers['email']!,
+                  label: AppStrings.email,
+                  prefixIcon: Icons.email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
+                  validator: Validators.validateEmail,
                 ),
+
                 const SizedBox(height: 16),
 
-                // Password input (Static - no rebuilds needed)
-                TextFormField(
-                  controller: _passwordController,
+                // Password field
+                FormHandler.createTextField(
+                  controller: _controllers['password']!,
+                  label: AppStrings.password,
+                  prefixIcon: Icons.lock,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
+                  validator: Validators.validatePassword,
                 ),
+
                 const SizedBox(height: 16),
 
-                // Confirm password input (Static - no rebuilds needed)
-                TextFormField(
-                  controller: _confirmPasswordController,
+                // Confirm password field
+                FormHandler.createTextField(
+                  controller: _controllers['confirmPassword']!,
+                  label: AppStrings.confirmPassword,
+                  prefixIcon: Icons.lock_outline,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
+                  validator: (value) => Validators.validateConfirmPassword(
+                    value,
+                    _controllers['password']!.text,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
                 ),
+
                 const SizedBox(height: 20),
 
-                // Role selection dropdown (Static - no rebuilds needed)
-                const Text(
-                  'Select Your Role:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                DropdownButtonFormField<String>(
-                  value: _selectedRole,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'customer',
-                      child: Text('Customer - I want to buy products'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'admin',
-                      child: Text('Admin - I want to sell products'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedRole = value!;
-                    });
-                  },
-                ),
-                const SizedBox(height: 30),
-
-                // Sign up button - ONLY this part listens to AuthProvider
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return CustomButton(
-                      text: 'Create Account',
-                      onPressed: authProvider.isLoading ? null : _handleSignUp,
-                      isLoading: authProvider.isLoading,
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // Error message - ONLY this part listens to AuthProvider
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    if (authProvider.errorMessage != null) {
-                      return Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red[300]!),
-                        ),
-                        child: Text(
-                          authProvider.errorMessage!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink(); // Return empty widget if no error
-                  },
+                // Role selection (reusable widget)
+                RoleDropdown(
+                  selectedRole: _selectedRole,
+                  onChanged: (value) => setState(() => _selectedRole = value!),
                 ),
 
                 const SizedBox(height: 30),
 
-                // Login link (Static - no rebuilds needed)
+                // Signup button
+                CustomButton(
+                  text: AppStrings.createAccount,
+                  onPressed: _handleSignup,
+                ),
+
+                const SizedBox(height: 30),
+
+                // Login link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account? '),
+                    Text(AppStrings.alreadyHaveAccount),
                     TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
+                      onPressed: () => NavigationHandler.goBack(context),
                       child: const Text(
-                        'Login',
+                        AppStrings.login,
                         style: TextStyle(
-                          color: Colors.green,
+                          color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

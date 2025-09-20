@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "706774173105",
+    "project_id": "planto-shopping",
+    "storage_bucket": "planto-shopping.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:706774173105:android:ced7a92b9a6a32dc986990",
+        "android_client_info": {
+          "package_name": "com.saTech.planto.planto_ecommerce_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfBs6jLnQQ3K2nkGaHabXksO7f8L1Cabk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

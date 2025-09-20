@@ -1,48 +1,43 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:planto_ecommerce_app/Routes/redirect_routes.dart';
-import 'package:planto_ecommerce_app/Routes/route_names.dart';
-import 'package:planto_ecommerce_app/Utils/colors.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'screens/splash_screen.dart';
 import 'providers/auth_provider.dart';
-import 'features/auth/domain/auth_repository.dart';
-import 'features/auth/data/firebase_auth_repository.dart';
 
-import 'firebase_options.dart';
-
-
-void main() async{
-  //Add firebase to project
+// Main function - Entry point of the app
+void main() async {
+  // Ensure Flutter widgets are initialized
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Firebase (make sure you have added Firebase config files)
+  await Firebase.initializeApp();
+
+  // Run the app
   runApp(const MyApp());
 }
 
+// Root widget of the application
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
+      // Wrap the app with Provider for state management
       providers: [
-        Provider<AuthRepository>(create: (_) => FirebaseAuthRepository()),
-        ChangeNotifierProvider(create: (ctx) => AuthProvider(ctx.read<AuthRepository>())),
+        // AuthProvider will manage authentication state throughout the app
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
+        title: 'Planto - Fruit & Vegetable App',
+        debugShowCheckedModeBanner: false, // Remove debug banner
         theme: ThemeData(
-          appBarTheme: AppBarTheme(
-            centerTitle: true,
-            color: AppColors.purpleColor
-          ),
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-
+          primarySwatch: Colors.green, // Green theme for plant app
+          fontFamily: 'Roboto',
         ),
-        title: 'Planto E-commerce',
-        initialRoute: RouteNames.splashScreen,
-        onGenerateRoute: RedirectRoutes.generateRoute,
+        // Start with splash screen
+        home: const SplashScreen(),
       ),
     );
   }
 }
-

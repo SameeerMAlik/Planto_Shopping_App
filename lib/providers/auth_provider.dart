@@ -1,51 +1,153 @@
-import 'dart:async';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:planto_ecommerce_app/Routes/route_names.dart';
-import '../models/app_user.dart';
-import '../features/auth/domain/auth_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
+// AuthProvider class manages all authentication logic
 class AuthProvider with ChangeNotifier {
-  final AuthRepository _repo;
-  StreamSubscription<String?>? _authSub;
+  // Firebase Auth instance
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  AppUser? _currentUser;
-  AppUser? get currentUser => _currentUser;
-  bool get isLoggedIn => _currentUser != null;
+  // Firebase Database instance
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
-  // Stream for auth state changes
-  Stream<AppUser?> onAuthStateChanged() {
-    return _repo.onAuthStateChangedUserId().asyncMap((_) async => await _repo.getCurrentUser());
+  // Current user
+  User? _user;
+
+  // User role (admin or customer)
+  String? _userRole;
+
+  // Loading state
+  bool _isLoading = false;
+
+  // Error message
+  String? _errorMessage;
+
+  // Getters - Allow other widgets to access these values
+  User? get user => _user;
+  String? get userRole => _userRole;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  bool get isLoggedIn => _user != null;
+
+  // Constructor - Check if user is already logged in when app starts
+  AuthProvider() {
+    _checkCurrentUser();
   }
 
-  AuthProvider(this._repo) {
-    _authSub = _repo.onAuthStateChangedUserId().listen((_) async {
-      _currentUser = await _repo.getCurrentUser();
-      notifyListeners();
-    });
+  // Check if user is already logged in
+  Future<void> _checkCurrentUser() async {
+    _user = _firebaseAuth.currentUser;
+    if (_user != null) {
+      // If user is logged in, fetch their role from database
+      await _fetchUserRole();
+    }
+    notifyListeners(); // Update UI
   }
 
-  Future<void> signUp(String email, String password, String name, String role) async {
-    _currentUser = await _repo.signUp(email: email, password: password, displayName: name, role: role);
-    notifyListeners();
+  // Set loading state
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners(); // Update UI when loading state changes
   }
 
-  Future<void> signIn(String email, String password) async {
-    _currentUser = await _repo.signIn(email: email, password: password);
-    notifyListeners();
+  // Set error message
+  void _setError(String? error) {
+    _errorMessage = error;
+    notifyListeners(); // Update UI when error changes
   }
 
+  // Sign up new user with email, password and role
+  Future<bool> signUp(String email, String password, String role) async {
+    try {
+      _setLoading(true); // Show loading indicator
+      _setError(null);   // Clear any previous errors
+
+      // Create user with Firebase Auth
+      UserCredential result = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      _user = result.user;
+
+      if (_user != null) {
+        // Store user information in Firebase Realtime Database
+        await _database.child('users').child(_user!.uid).set({
+          'email': email,
+          'role': role, // Store the selected role (admin/customer)
+          'createdAt': DateTime.now().millisecondsSinceEpoch,
+        });
+
+        _userRole = role; // Set the role in provider
+        _setLoading(false);
+        return true; // Sign up successful
+      }
+    } catch (e) {
+      _setError(e.toString()); // Show error to user
+      _setLoading(false);
+    }
+    return false; // Sign up failed
+  }
+
+  // Sign in existing user
+  Future<bool> signIn(String email, String password) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      // Sign in with Firebase Auth
+      UserCredential result = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      _user = result.user;
+
+      if (_user != null) {
+        // Fetch user role from database
+        await _fetchUserRole();
+        _setLoading(false);
+        return true; // Sign in successful
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+    }
+    return false; // Sign in failed
+  }
+
+  // Fetch user role from Firebase Database
+  Future<void> _fetchUserRole() async {
+    if (_user != null) {
+      try {
+        // Get user data from database
+        DatabaseEvent event = await _database.child('users').child(_user!.uid).once();
+
+        if (event.snapshot.exists) {
+          Map<dynamic, dynamic> userData = event.snapshot.value as Map<dynamic, dynamic>;
+          _userRole = userData['role']; // Get the role
+        }
+      } catch (e) {
+        _setError('Failed to fetch user role: $e');
+      }
+    }
+  }
+
+  // Sign out user
   Future<void> signOut() async {
-    await _repo.signOut();
-    _currentUser = null;
-    notifyListeners();
+    try {
+      await _firebaseAuth.signOut();
+      _user = null;
+      _userRole = null;
+      _setError(null);
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to sign out: $e');
+    }
   }
 
-  @override
-  void dispose() {
-    _authSub?.cancel();
-    super.dispose();
+  // Clear error message
+  void clearError() {
+    _setError(null);
   }
 }
-
-
